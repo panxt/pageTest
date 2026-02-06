@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Amazon GDS（Global Direct Sourcing）深度拆解｜可视化一页站</title>
+  <meta name="description" content="Amazon Global Direct Sourcing (GDS) 深度拆解：机制、收益、准入、风险、适配与落地清单，含可视化与FAQ。"/>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#101a33;
+      --panel2:#0f1730;
+      --text:#eaf0ff;
+      --muted:#a8b3d6;
+      --brand:#7aa2ff;
+      --brand2:#55e3c6;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --good:#64f58d;
+      --line:rgba(255,255,255,.10);
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      background: radial-gradient(1200px 800px at 15% 10%, rgba(122,162,255,.16), transparent 50%),
+                  radial-gradient(900px 600px at 85% 20%, rgba(85,227,198,.10), transparent 55%),
+                  radial-gradient(1200px 800px at 55% 90%, rgba(255,204,102,.08), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      line-height:1.55;
+    }
+    a{color:var(--brand); text-decoration:none}
+    .wrap{max-width:1200px; margin:0 auto; padding:28px 20px 60px}
+    header{
+      display:flex; gap:18px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .title{display:flex; flex-direction:column; gap:6px;}
+    .title h1{margin:0; font-size:26px; letter-spacing:.2px}
+    .title p{margin:0; color:var(--muted); max-width:760px}
+    .chiprow{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .chip{
+      padding:6px 10px; border:1px solid var(--line); border-radius:999px; color:var(--muted);
+      background:rgba(255,255,255,.04);
+      font-size:12px;
+    }
+    .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    button{
+      appearance:none; border:none; cursor:pointer;
+      padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06); color:var(--text);
+      border:1px solid var(--line);
+      transition:.15s transform ease,.15s background ease;
+    }
+    button:hover{transform:translateY(-1px); background:rgba(255,255,255,.10)}
+    button.primary{background:linear-gradient(135deg, rgba(122,162,255,.95), rgba(85,227,198,.88)); border:none; color:#081022}
+    button.primary:hover{filter:brightness(1.05)}
+    .grid{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:16px;
+      margin-top:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr; }
+    }
+    .sidebar{
+      background:linear-gradient(180deg, rgba(16,26,51,.92), rgba(16,26,51,.72));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .sidehead{
+      padding:14px 14px 10px; border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .sidehead strong{font-size:14px}
+    .search{
+      width:100%; margin-top:10px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      color:var(--text); border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-family: inherit;
+    }
+    textarea.search{padding-top:12px}
+    .nav{display:flex; flex-direction:column; padding:10px; gap:6px;}
+    .nav .item{
+      display:flex; align-items:center; gap:10px;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid transparent;
+      color:var(--muted);
+      cursor:pointer;
+      user-select:none;
+    }
+    .nav .item:hover{background:rgba(255,255,255,.06); color:var(--text)}
+    .nav .item.active{background:rgba(122,162,255,.12); border-color:rgba(122,162,255,.25); color:var(--text)}
+    .dot{width:10px; height:10px; border-radius:999px; background:rgba(255,255,255,.20)}
+    .item.active .dot{background:linear-gradient(135deg, var(--brand), var(--brand2))}
+    .content{display:flex; flex-direction:column; gap:16px;}
+    .panel{
+      background:linear-gradient(180deg, rgba(16,26,51,.92), rgba(16,26,51,.70));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:16px 16px 10px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .panel .hd h2{margin:0; font-size:16px}
+    .panel .bd{padding:16px}
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 980px){ .kpis{grid-template-columns: repeat(2, 1fr);} }
+    @media (max-width: 520px){ .kpis{grid-template-columns: 1fr;} }
+    .kpi{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      min-height:94px;
+    }
+    .kpi .label{color:var(--muted); font-size:12px}
+    .kpi .value{font-size:18px; font-weight:700; margin-top:6px}
+    .kpi .sub{color:var(--muted); font-size:12px; margin-top:6px}
+    .two{display:grid; grid-template-columns: 1.3fr .9fr; gap:12px;}
+    @media (max-width:980px){ .two{grid-template-columns:1fr} }
+    .card{
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+    }
+    .card h3{margin:0 0 8px; font-size:14px}
+    .muted{color:var(--muted)}
+    ul{margin:10px 0 0 18px; padding:0}
+    li{margin:6px 0}
+    .tag{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--muted);
+      font-size:12px;
+      margin-right:6px; margin-top:6px;
+    }
+    .pill-good{border-color: rgba(100,245,141,.28); background:rgba(100,245,141,.08); color:rgba(220,255,232,.92)}
+    .pill-warn{border-color: rgba(255,204,102,.30); background:rgba(255,204,102,.08); color:rgba(255,240,210,.92)}
+    .pill-bad{border-color: rgba(255,107,107,.30); background:rgba(255,107,107,.08); color:rgba(255,220,220,.92)}
+    .flow{display:grid; gap:10px; grid-template-columns: repeat(5, 1fr);}
+    @media (max-width: 980px){ .flow{grid-template-columns:1fr} }
+    .step{
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      min-height:94px;
+    }
+    .step .n{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:26px; height:26px; border-radius:10px;
+      background:rgba(122,162,255,.14);
+      border:1px solid rgba(122,162,255,.24);
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .step .t{font-weight:700; font-size:13px; margin-bottom:4px}
+    .step .d{color:var(--muted); font-size:12px}
+    .compare{
+      width:100%;
+      border-collapse:collapse;
+      overflow:hidden;
+      border-radius:14px;
+      border:1px solid var(--line);
+    }
+    .compare th, .compare td{
+      padding:10px 10px;
+      border-bottom:1px solid var(--line);
+      vertical-align:top;
+      font-size:13px;
+    }
+    .compare th{background:rgba(255,255,255,.05); text-align:left}
+    .compare tr:last-child td{border-bottom:none}
+    .accordion .q{
+      display:flex; justify-content:space-between; gap:12px;
+      padding:12px; border-radius:14px;
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      cursor:pointer;
+      user-select:none;
+      margin-bottom:10px;
+    }
+    .accordion .a{
+      display:none;
+      padding:10px 12px 14px;
+      margin-top:-6px;
+      margin-bottom:12px;
+      color:var(--muted);
+    }
+    .accordion .q span{font-weight:700}
+    .accordion .q em{font-style:normal; color:var(--muted)}
+    .show{display:block !important}
+    .footer{margin-top:18px; color:var(--muted); font-size:12px; padding:12px 2px 0;}
+    .small{font-size:12px}
+    .note{
+      border-left:3px solid rgba(255,204,102,.65);
+      padding:10px 12px;
+      background:rgba(255,204,102,.06);
+      border-radius:12px;
+      color:rgba(255,240,210,.92);
+      margin-top:10px;
+    }
+    .hidden{display:none}
+    canvas{max-width:100%}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>Amazon GDS（Global Direct Sourcing）深度拆解 · 可视化一页站</h1>
+        <p>面向供应商/工厂的决策视角：机制、收益、准入、风险、适配与落地清单。内容基于你提供的《Global Sourcing - An Introduction to vendors》要点整理。</p>
+        <div class="chiprow">
+          <span class="chip">Onboard once → 多国售卖</span>
+          <span class="chip">单全球PO</span>
+          <span class="chip">Origin 集货 → Amazon 分拨</span>
+          <span class="chip">合规责任在供应商</span>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="window.print()">打印 / 导出PDF</button>
+        <button onclick="copyKey()">复制本页关键结论</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <aside class="sidebar">
+        <div class="sidehead">
+          <strong>模块导航</strong>
+          <span class="chip small" id="versionChip">v1.0</span>
+        </div>
+        <div style="padding:0 12px 12px">
+          <input class="search" id="search" placeholder="搜索：如“准入/Incoterms/合规/付款/退货”（回车跳转）"/>
+        </div>
+        <nav class="nav" id="nav">
+          <div class="item active" data-target="overview"><span class="dot"></span> 总览仪表盘</div>
+          <div class="item" data-target="how"><span class="dot"></span> 机制与流程</div>
+          <div class="item" data-target="benefits"><span class="dot"></span> 核心收益</div>
+          <div class="item" data-target="eligibility"><span class="dot"></span> 准入与条款</div>
+          <div class="item" data-target="risks"><span class="dot"></span> 风险与坑位</div>
+          <div class="item" data-target="fit"><span class="dot"></span> 适配评估（自测）</div>
+          <div class="item" data-target="checklist"><span class="dot"></span> 落地清单</div>
+          <div class="item" data-target="faq"><span class="dot"></span> FAQ 问答</div>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <section class="panel" id="overview">
+          <div class="hd">
+            <h2>总览仪表盘</h2>
+            <span class="chip">决策用：先看这里</span>
+          </div>
+          <div class="bd">
+            <div class="kpis">
+              <div class="kpi">
+                <div class="label">一句话定位</div>
+                <div class="value">多国需求合并 → 单全球PO</div>
+                <div class="sub">你一次出运到 origin，Amazon 做分拨</div>
+              </div>
+              <div class="kpi">
+                <div class="label">覆盖区域（示例）</div>
+                <div class="value">NA / EU / MENA / APAC</div>
+                <div class="sub">按项目开放的目的国站点</div>
+              </div>
+              <div class="kpi">
+                <div class="label">供应商责任</div>
+                <div class="value">合规 & 产品一致性</div>
+                <div class="sub">目的国法规/标签/包装你负责</div>
+              </div>
+              <div class="kpi">
+                <div class="label">适用产品倾向</div>
+                <div class="value">标准化 / 非敏感品</div>
+                <div class="sub">非危化/非医疗等更优先</div>
+              </div>
+            </div>
+
+            <div class="two" style="margin-top:12px">
+              <div class="card">
+                <h3>关键结论（给老板/评审的3句话）</h3>
+                <ul>
+                  <li><b>扩国家更轻：</b>Onboard 一次，减少多国VC/目录/运营重复。</li>
+                  <li><b>供应链更稳：</b>多国需求合并，利于MOQ与排产；Amazon 在起运地接收并组织分拨。</li>
+                  <li><b>合规更要谨慎：</b>Amazon不替你判断目的国法规，你对当地合规承担最终责任。</li>
+                </ul>
+                <div class="note"><b>建议：</b>如果你计划 6-18 个月内扩 2+ 国家站点，且产品包装/标签可做到“全球同款”，GDS 的组织效率优势会被放大。</div>
+              </div>
+
+              <div class="card">
+                <h3>可视化：GDS vs 传统多国DI（示意评分）</h3>
+                <p class="muted">用于内部沟通：越高越有利（非官方量化口径）</p>
+                <canvas id="radar" height="230"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="how">
+          <div class="hd">
+            <h2>机制与流程：端到端怎么跑</h2>
+            <span class="chip">看清“一个全球PO”的含义</span>
+          </div>
+          <div class="bd">
+            <div class="card">
+              <h3>流程五步（供应商视角）</h3>
+              <div class="flow">
+                <div class="step"><div class="n">1</div><div class="t">多国需求汇总</div><div class="d">多站点需求合并为全球需求池</div></div>
+                <div class="step"><div class="n">2</div><div class="t">生成单全球PO</div><div class="d">从“多PO”变为“一PO”</div></div>
+                <div class="step"><div class="n">3</div><div class="t">你一次备货出运</div><div class="d">按FOB/FCA等条款准备出运</div></div>
+                <div class="step"><div class="n">4</div><div class="t">Origin 接收</div><div class="d">Amazon 在起运节点接收货物</div></div>
+                <div class="step"><div class="n">5</div><div class="t">拆柜分拨到各国</div><div class="d">Amazon 组织集装与目的国配送</div></div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:12px">
+              <h3>责任边界（非常关键）</h3>
+              <div>
+                <span class="tag pill-good">你负责：产品一致性/包装标签/目的国合规</span>
+                <span class="tag pill-good">你负责：生产计划/交期/一次出运</span>
+                <span class="tag pill-warn">Amazon负责：origin接收/跨国分拨/多国供给</span>
+              </div>
+              <p class="muted" style="margin-top:10px">
+                含义：如果目的国海关/监管在进口时要求文件，Amazon会找你补齐；但“该不该有/怎么满足”仍由你保证。
+              </p>
+            </div>
+
+            <div class="card" style="margin-top:12px">
+              <h3>传统 DI vs GDS：结构性差异</h3>
+              <table class="compare">
+                <thead><tr><th>维度</th><th>传统DI（多国）</th><th>GDS（全球直采）</th></tr></thead>
+                <tbody>
+                  <tr><td>订单</td><td>多站点多PO</td><td><b>单全球PO</b></td></tr>
+                  <tr><td>出运</td><td>多票出运、多国到港</td><td><b>一次出运到 origin</b></td></tr>
+                  <tr><td>分拨</td><td>你/第三方协调</td><td><b>Amazon组织分拨</b></td></tr>
+                  <tr><td>运营复杂度</td><td>账号/目录/流程重复</td><td><b>Onboard一次，多国复用</b></td></tr>
+                  <tr><td>合规责任</td><td>供应商</td><td><b>仍是供应商</b></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="benefits">
+          <div class="hd">
+            <h2>核心收益：你为什么要考虑GDS</h2>
+            <span class="chip">从“省事”到“组织能力升级”</span>
+          </div>
+          <div class="bd">
+            <div class="two">
+              <div class="card">
+                <h3>收益拆解（供应商视角）</h3>
+                <ul>
+                  <li><b>运营降本：</b>减少多国VC、目录、图片、对账、流程重复。</li>
+                  <li><b>MOQ友好：</b>多国需求合并，更容易凑工厂MOQ。</li>
+                  <li><b>排产更稳：</b>以“全球需求”排产，产线利用率更好。</li>
+                  <li><b>缺货改善：</b>更接近延迟分配 + 安全库存思路，降低ROOS风险。</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>可视化：收益影响面（示意）</h3>
+                <p class="muted">用于评审沟通：把收益映射到业务指标</p>
+                <canvas id="bar" height="230"></canvas>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:12px">
+              <h3>两条“隐性收益”（很多人忽略）</h3>
+              <ul>
+                <li><b>组织协同：</b>扩国家不再需要复制一套运营体系，而是复用一套全球供给体系。</li>
+                <li><b>预测口径：</b>需求合并后噪音更小，利于锁产能与交期承诺。</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="eligibility">
+          <div class="hd">
+            <h2>准入与条款：哪些产品/供应商更容易进</h2>
+            <span class="chip">先自查：一致性 + 合规 + 条款</span>
+          </div>
+          <div class="bd">
+            <div class="two">
+              <div class="card">
+                <h3>ASIN 级准入（硬门槛）</h3>
+                <ul>
+                  <li><b>Fungible ASIN：</b>同产品/同包装/同标签。</li>
+                  <li><b>Origin：</b>中国起运节点（项目会扩展其他起运地）。</li>
+                  <li><b>品类限制：</b>非危化/非化学/非医疗等优先。</li>
+                  <li><b>特别说明：</b>澳洲对部分 H&B 可能限制。</li>
+                </ul>
+                <div class="note"><b>最常见卡点：</b>多国标签/说明书/警示语不一致 → 无法“同款通用”。</div>
+              </div>
+              <div class="card">
+                <h3>条款与运营要求</h3>
+                <ul>
+                  <li><b>Incoterms：</b>FCA/FOB 等。</li>
+                  <li><b>条款：</b>通常沿用现有DI条款（US或EU），偏好单一Net成本。</li>
+                  <li><b>入口：</b>多通过 US Vendor Central 运营（vendor code层级）。</li>
+                  <li><b>广告：</b>通过广告平台投放。</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="risks">
+          <div class="hd">
+            <h2>风险与坑位：不踩坑的关键点</h2>
+            <span class="chip">合规 / 退货 / 库存掌控 / 异常文件</span>
+          </div>
+          <div class="bd">
+            <div class="card">
+              <h3>四大风险区（建议列入立项评审）</h3>
+              <div>
+                <span class="tag pill-bad">合规责任：目的国法规你兜底</span>
+                <span class="tag pill-warn">包装/标签：必须全球同款</span>
+                <span class="tag pill-warn">库存掌控：分拨后可见性/调拨逻辑</span>
+                <span class="tag pill-warn">异常处理：海关抽检/补交文件</span>
+              </div>
+              <ul>
+                <li><b>合规：</b>Amazon不提供合规建议；如监管/海关要求文件，会向你索取。</li>
+                <li><b>一致性：</b>Fungible做不到，GDS优势无法释放。</li>
+                <li><b>库存/退货：</b>多国分拨后，退货/召回/下架预案必须提前定。</li>
+                <li><b>付款/对账：</b>务必确认收货点口径、扣款项、索赔规则、异常流程。</li>
+              </ul>
+              <div class="note"><b>落地提示：</b>把“合规文件包 + 包装一致性 + 异常与退货预案”写进你们《新品立项评审清单》。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="fit">
+          <div class="hd">
+            <h2>适配评估（自测）：你们适不适合做GDS</h2>
+            <span class="chip">3分钟打分</span>
+          </div>
+          <div class="bd">
+            <div class="card">
+              <h3>自测打分（选择后自动给建议）</h3>
+              <p class="muted">按：扩国家诉求 + Fungible能力 + 合规成熟度 + 供应链稳定性 来决策。</p>
+              <div style="display:grid; gap:10px; grid-template-columns:1fr 1fr;">
+                <label class="card" style="margin:0">
+                  <h3>未来12个月扩国家</h3>
+                  <select id="q_country" style="width:100%; padding:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--text)">
+                    <option value="0">0-1个国家</option>
+                    <option value="1">2-3个国家</option>
+                    <option value="2">4个及以上</option>
+                  </select>
+                </label>
+                <label class="card" style="margin:0">
+                  <h3>包装/标签能否全球统一</h3>
+                  <select id="q_pack" style="width:100%; padding:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--text)">
+                    <option value="0">难（多国差异大）</option>
+                    <option value="1">部分可统一</option>
+                    <option value="2">可完全统一（Fungible）</option>
+                  </select>
+                </label>
+                <label class="card" style="margin:0">
+                  <h3>目的国合规成熟度</h3>
+                  <select id="q_comp" style="width:100%; padding:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--text)">
+                    <option value="0">弱：靠临时补资料</option>
+                    <option value="1">中：有部分文件包</option>
+                    <option value="2">强：有完整合规SOP</option>
+                  </select>
+                </label>
+                <label class="card" style="margin:0">
+                  <h3>供应链稳定性（交期/产能）</h3>
+                  <select id="q_sc" style="width:100%; padding:10px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--text)">
+                    <option value="0">波动大</option>
+                    <option value="1">一般稳定</option>
+                    <option value="2">稳定：可承诺交期</option>
+                  </select>
+                </label>
+              </div>
+              <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap">
+                <button class="primary" onclick="calcFit()">生成建议</button>
+                <button onclick="resetFit()">重置</button>
+              </div>
+              <div id="fitResult" class="note" style="display:none; margin-top:12px"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="checklist">
+          <div class="hd">
+            <h2>落地清单：从0到1的准备项</h2>
+            <span class="chip">可复制到内部SOP</span>
+          </div>
+          <div class="bd">
+            <div class="two" style="grid-template-columns:1fr 1fr;">
+              <div class="card">
+                <h3>产品与包装（Fungible）</h3>
+                <ul>
+                  <li>统一包装结构、说明书、警示语（多语言策略）</li>
+                  <li>统一标签/条码方案（满足多国通用）</li>
+                  <li>建立“多国一致性变更流程”（变更触发评审）</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>合规文件包（目的国兜底）</h3>
+                <ul>
+                  <li>按国家建立合规清单：法规/标准/标签</li>
+                  <li>证书&测试报告归档：版本/有效期管理</li>
+                  <li>海关/监管可能要求文件：随时可交付</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>供应链与交付</h3>
+                <ul>
+                  <li>按全球PO节奏制定排产与安全库存</li>
+                  <li>确认 origin 入仓/交付规则与预约机制</li>
+                  <li>异常流程：延误、破损、短装、补货</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>财务与对账</h3>
+                <ul>
+                  <li>明确付款节点：收货点/扣款项/索赔规则</li>
+                  <li>建立对账模板：PO—发货—收货—付款闭环</li>
+                  <li>多国价格/税费：内部统一核算口径</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="faq">
+          <div class="hd">
+            <h2>FAQ 问答（模块化）</h2>
+            <span class="chip">支持自己添加</span>
+          </div>
+          <div class="bd">
+            <div class="accordion" id="faqAcc">
+              <div class="q"><span>Q1：GDS 和传统 DI 最大的本质差别是什么？</span><em>展开</em></div>
+              <div class="a">本质差别是“多国需求合并成一个全球PO + origin 接收后由 Amazon 分拨”。对供应商来说，从“多国多套运营+多票出运”变成“一套供给+一次出运”。</div>
+
+              <div class="q"><span>Q2：我是不是就不用管各国合规了？</span><em>展开</em></div>
+              <div class="a">不是。PPT明确：Amazon 不为供应商提供合规建议，供应商需保证产品满足目的国法规。Amazon 只会在进口前告知其可能要求的资料；若监管/海关要求文件仍会向你索取。</div>
+
+              <div class="q"><span>Q3：什么是 Fungible ASIN？为什么它是硬门槛？</span><em>展开</em></div>
+              <div class="a">Fungible ASIN 指同一产品在多国使用相同包装/标签/标识（同款通用）。因为GDS要把多国需求合并并统一发运，如果各国包装不同，就无法用同一批货做多国分拨。</div>
+
+              <div class="q"><span>Q4：哪些产品更适合先上GDS？</span><em>展开</em></div>
+              <div class="a">标准化、非敏感、合规路径清晰、包装易统一的产品更适合。相反，危化/医疗/高监管品类或多国标签差异极大的产品，会显著提高落地成本与风险。</div>
+
+              <div class="q"><span>Q5：我该怎么把“GDS是否可行”写进内部立项评审？</span><em>展开</em></div>
+              <div class="a">建议新增四项：①扩国家数量（>=2更值）②包装标签是否可全球统一（Fungible）③合规文件包是否完备④异常/退货/召回预案是否齐全。任一项不达标，都不建议贸然铺开。</div>
+            </div>
+
+            <div class="card">
+              <h3>添加你自己的FAQ（本地保存）</h3>
+              <p class="muted">输入问题与答案，点击“添加”。刷新页面不丢（保存在浏览器本地）。</p>
+              <input id="faqQ" class="search" placeholder="问题：例如“GDS对包装语言有什么建议？”"/>
+              <textarea id="faqA" class="search" style="height:110px; resize:vertical" placeholder="答案：写你的结论或需要补充的规则"></textarea>
+              <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap">
+                <button class="primary" onclick="addFAQ()">添加FAQ</button>
+                <button onclick="clearFAQ()">清空自定义FAQ</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="footer">
+          <div>说明：页面评分/图表为“内部沟通型可视化”，用于辅助决策讨论；具体条款、开放国家与节点、准入以你收到的 Amazon 项目通知/VC规则为准。</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script>
+  // Navigation
+  const nav = document.getElementById('nav');
+  const items = [...nav.querySelectorAll('.item')];
+  const sections = items.map(i => document.getElementById(i.dataset.target));
+
+  function activate(targetId){
+    items.forEach(i => i.classList.toggle('active', i.dataset.target === targetId));
+    sections.forEach(s => s.classList.toggle('hidden', s.id !== targetId));
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  items.forEach(i => i.addEventListener('click', ()=> activate(i.dataset.target)));
+
+  // Search jump
+  const search = document.getElementById('search');
+  search.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Enter') return;
+    const q = search.value.trim().toLowerCase();
+    if(!q) return;
+    for(const s of sections){
+      const t = s.innerText.toLowerCase();
+      if(t.includes(q)){ activate(s.id); break; }
+    }
+  });
+
+  // Charts
+  function buildCharts(){
+    const radar = document.getElementById('radar');
+    if(radar){
+      new Chart(radar, {
+        type: 'radar',
+        data: {
+          labels: ['扩国家效率','运营复杂度','MOQ/排产','缺货改善','合规压力'],
+          datasets: [
+            { label: 'GDS（示意）', data: [8, 8, 7, 6, 6] },
+            { label: '传统多国DI（示意）', data: [4, 3, 4, 4, 5] }
+          ]
+        },
+        options: {
+          responsive:true,
+          plugins:{ legend:{ labels:{ color:'#eaf0ff' } } },
+          scales:{
+            r:{
+              min:0, max:10,
+              ticks:{ display:false },
+              grid:{ color:'rgba(255,255,255,.10)' },
+              angleLines:{ color:'rgba(255,255,255,.10)' },
+              pointLabels:{ color:'rgba(234,240,255,.85)', font:{ size:12 } }
+            }
+          }
+        }
+      });
+    }
+
+    const bar = document.getElementById('bar');
+    if(bar){
+      new Chart(bar, {
+        type:'bar',
+        data:{
+          labels:['运营降本','扩国家速度','MOQ达成','排产稳定','缺货降低'],
+          datasets:[{ label:'影响强度（示意）', data:[8,9,7,7,6] }]
+        },
+        options:{
+          responsive:true,
+          plugins:{ legend:{ display:false } },
+          scales:{
+            x:{ ticks:{ color:'rgba(234,240,255,.85)' }, grid:{ color:'rgba(255,255,255,.06)' } },
+            y:{ ticks:{ color:'rgba(234,240,255,.85)' }, grid:{ color:'rgba(255,255,255,.06)' }, beginAtZero:true, suggestedMax:10 }
+          }
+        }
+      });
+    }
+  }
+  buildCharts();
+
+  // FAQ accordion
+  function bindAccordion(){
+    const acc = document.getElementById('faqAcc');
+    if(!acc) return;
+    const qs = [...acc.querySelectorAll('.q')];
+    qs.forEach((qEl)=>{
+      qEl.addEventListener('click', ()=>{
+        const aEl = qEl.nextElementSibling;
+        aEl.classList.toggle('show');
+        qEl.querySelector('em').textContent = aEl.classList.contains('show') ? '收起' : '展开';
+      });
+    });
+  }
+  bindAccordion();
+
+  // Copy key takeaways
+  function copyKey(){
+    const txt = [
+      'Amazon GDS 关键结论：',
+      '1) 多国需求合并成单全球PO；供应商一次出运到 origin，Amazon 做分拨。',
+      '2) 优势：扩国家更轻、MOQ/排产更稳、运营重复更少。',
+      '3) 风险：目的国合规责任在供应商；包装/标签需全球同款（Fungible）。'
+    ].join('\n');
+    navigator.clipboard.writeText(txt).then(()=> alert('已复制关键结论到剪贴板'));
+  }
+  window.copyKey = copyKey;
+
+  // Fit calculator
+  function calcFit(){
+    const score = (Number(q_country.value)+Number(q_pack.value)+Number(q_comp.value)+Number(q_sc.value));
+    let level, msg;
+    if(score >= 7){
+      level = '强适配';
+      msg = '建议推进：挑 1-3 个代表ASIN做试点 → 跑通“全球同款/文件包/对账异常”闭环，再扩类目与国家。';
+    }else if(score >= 4){
+      level = '中等适配';
+      msg = '可试点，但要先补齐短板：优先搞定“Fungible包装标签方案”和“目的国合规文件包”。';
+    }else{
+      level = '低适配（谨慎）';
+      msg = '建议先完善包装一致性能力与合规SOP，再考虑GDS，否则风险与返工成本偏高。';
+    }
+    const box = document.getElementById('fitResult');
+    box.style.display = 'block';
+    box.innerHTML = `<b>评估结果：${level}</b><br/>总分：${score}/8<br/>建议：${msg}`;
+  }
+  function resetFit(){
+    q_country.value='0'; q_pack.value='0'; q_comp.value='0'; q_sc.value='0';
+    const box = document.getElementById('fitResult');
+    box.style.display='none'; box.innerHTML='';
+  }
+  window.calcFit = calcFit;
+  window.resetFit = resetFit;
+
+  // Custom FAQ with localStorage
+  const LS_KEY = 'gds_custom_faq_v1';
+  function renderCustomFAQ(){
+    const acc = document.getElementById('faqAcc');
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    [...acc.querySelectorAll('[data-custom="1"]')].forEach(el=> el.remove());
+    saved.forEach(({q,a})=>{
+      const qDiv = document.createElement('div');
+      qDiv.className='q';
+      qDiv.setAttribute('data-custom','1');
+      qDiv.innerHTML = `<span>${q}</span><em>展开</em>`;
+      const aDiv = document.createElement('div');
+      aDiv.className='a';
+      aDiv.setAttribute('data-custom','1');
+      aDiv.textContent = a;
+      acc.appendChild(qDiv);
+      acc.appendChild(aDiv);
+    });
+    bindAccordion();
+  }
+  function addFAQ(){
+    const q = (document.getElementById('faqQ').value || '').trim();
+    const a = (document.getElementById('faqA').value || '').trim();
+    if(!q || !a){ alert('请填写问题与答案'); return; }
+    const saved = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    saved.unshift({q,a});
+    localStorage.setItem(LS_KEY, JSON.stringify(saved));
+    document.getElementById('faqQ').value='';
+    document.getElementById('faqA').value='';
+    renderCustomFAQ();
+    alert('已添加到本地FAQ');
+  }
+  function clearFAQ(){
+    localStorage.removeItem(LS_KEY);
+    renderCustomFAQ();
+    alert('已清空自定义FAQ');
+  }
+  window.addFAQ = addFAQ;
+  window.clearFAQ = clearFAQ;
+  renderCustomFAQ();
+</script>
+</body>
+</html>
