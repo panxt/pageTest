@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亚马逊全球直采 (GDS) - 供应商指南</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts (Noto Sans SC for Chinese) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Amazon Corporate CN -->
+    <!-- Primary: #232F3E (午夜蓝 - 亚马逊主色) -->
+    <!-- Accent: #FF9900 (亚马逊橙 - 强调色) -->
+    <!-- Secondary: #007185 (链接蓝 - 交互元素) -->
+    <!-- Background: #F8FAFC (极淡灰蓝 - 专业背景) -->
+
+    <!-- Application Structure Plan: 
+         1. 顶部导航：清晰的模块跳转。
+         2. 核心价值区 (Hero)：大标题强调“一次入驻，全球通卖”，配合关键数据卡片。
+         3. 模式对比 (Model)：通过动态 CSS 拓扑图，直观展示“多对多”混乱模式 vs “一对一”整合模式的区别。
+         4. 收益分析 (Benefits)：使用雷达图 (Radar Chart) 多维度量化对比 GDS 与传统 DI 的优势。
+         5. 流程指引 (Process)：5步阶梯式互动组件，点击步骤查看具体操作。
+         6. 智能问答 (FAQ)：新增模块。采用“Tab卡片 + 手风琴”结构，分类展示常见问题，解决信息过载。
+         7. 合规与页脚：强调保密性与责任边界。
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. 拓扑图 (CSS Diagram)：完全用 HTML/CSS 绘制，无 SVG。通过 JS 切换 class 来改变连线和节点布局，展示物流流向。
+         2. 雷达图 (Chart.js)：对比“传统 DI”与“GDS”在“简化度、覆盖率、整合度”等维度的得分。
+         3. 步骤条 (Stepper)：可视化进度条，点击节点高亮并切换下方内容区域。
+         4. FAQ 交互：利用 JS 过滤数组数据，实现无刷新分类切换。
+         CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+
+    <style>
+        body { font-family: 'Noto Sans SC', 'Roboto', sans-serif; }
+        
+        /* Chart Container Constraint */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+            height: 380px;
+            max-height: 400px;
+        }
+
+        /* Interactive Elements */
+        .nav-item.active {
+            color: #FF9900;
+            border-bottom: 2px solid #FF9900;
+            font-weight: 700;
+        }
+
+        .step-node {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .step-node.active {
+            transform: scale(1.15);
+            box-shadow: 0 10px 15px -3px rgba(255, 153, 0, 0.3);
+            background-color: #FF9900;
+            border-color: white;
+            color: white;
+        }
+
+        /* FAQ Card Styling */
+        .faq-category-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .faq-category-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .faq-category-card.active {
+            border: 2px solid #FF9900;
+            background-color: #FFF7ED; /* Orange-50 */
+        }
+        .faq-category-card.active .icon {
+            color: #C05621; /* Orange-700 */
+        }
+
+        /* Animations */
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Custom Scrollbar for FAQ content if needed */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #CBD5E1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+
+    <!-- Confidentiality Strip -->
+    <div class="bg-gray-900 text-gray-300 text-xs text-center py-1.5 tracking-wide">
+        机密信息：仅供亚马逊供应商合作伙伴内部传阅 • CONFIDENTIAL
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo Area -->
+                <div class="flex items-center gap-2">
+                    <div class="text-2xl font-bold text-slate-900 tracking-tight">Amazon <span class="text-orange-500 font-normal">GDS</span></div>
+                    <div class="hidden sm:block w-px h-6 bg-gray-300 mx-2"></div>
+                    <div class="hidden sm:block text-xs text-gray-500 leading-tight">全球直采项目<br>Global Direct Sourcing</div>
+                </div>
+                
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex space-x-6 items-center">
+                    <button onclick="router('home')" class="nav-item active px-2 py-5 text-sm font-medium text-gray-600 hover:text-gray-900 transition">项目概览</button>
+                    <button onclick="router('model')" class="nav-item px-2 py-5 text-sm font-medium text-gray-600 hover:text-gray-900 transition">模式对比</button>
+                    <button onclick="router('benefits')" class="nav-item px-2 py-5 text-sm font-medium text-gray-600 hover:text-gray-900 transition">核心优势</button>
+                    <button onclick="router('process')" class="nav-item px-2 py-5 text-sm font-medium text-gray-600 hover:text-gray-900 transition">合作流程</button>
+                    <button onclick="router('faq')" class="nav-item px-2 py-5 text-sm font-medium text-gray-600 hover:text-gray-900 transition flex items-center gap-1">
+                        <span>常见问答</span>
+                        <span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded-full font-bold">FAQ</span>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="text-gray-500 hover:text-orange-500 p-2">
+                        <span class="text-2xl">☰</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu (Hidden by default) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 absolute w-full shadow-lg">
+            <button onclick="router('home')" class="block w-full text-left px-6 py-3 text-sm text-gray-700 border-b border-gray-50 active:bg-gray-50">项目概览</button>
+            <button onclick="router('model')" class="block w-full text-left px-6 py-3 text-sm text-gray-700 border-b border-gray-50 active:bg-gray-50">模式对比</button>
+            <button onclick="router('benefits')" class="block w-full text-left px-6 py-3 text-sm text-gray-700 border-b border-gray-50 active:bg-gray-50">核心优势</button>
+            <button onclick="router('process')" class="block w-full text-left px-6 py-3 text-sm text-gray-700 border-b border-gray-50 active:bg-gray-50">合作流程</button>
+            <button onclick="router('faq')" class="block w-full text-left px-6 py-3 text-sm text-gray-700 active:bg-gray-50 font-bold text-orange-600">常见问答 (FAQ)</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- SECTION: HOME -->
+        <section id="view-home" class="fade-in-up">
+            <div class="text-center py-10 lg:py-16">
+                <span class="inline-block py-1 px-3 rounded-full bg-orange-100 text-orange-700 text-xs font-bold tracking-wider mb-4 border border-orange-200">亚马逊官方直采渠道</span>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
+                    一次入驻，<br class="sm:hidden"><span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500">全球通卖</span>
+                </h1>
+                <p class="max-w-2xl mx-auto text-lg text-gray-500 mb-10 leading-relaxed">
+                    <strong>GDS (Global Direct Sourcing)</strong> 是亚马逊推出的全新直接进口模式。我们将全球多个站点的需求整合为一张订单，通过统一的接收端（GXD），帮助您简化供应链，轻松触达全球 3.15 亿+ 活跃用户。
+                </p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="router('model')" class="px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5">
+                        查看模式对比
+                    </button>
+                    <button onclick="router('faq')" class="px-8 py-3.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition shadow-sm">
+                        常见问题 FAQ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 border-t border-gray-200 pt-10">
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 text-center">
+                    <div class="text-3xl font-bold text-slate-900 mb-1">3.15亿+</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">全球活跃用户</div>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 text-center">
+                    <div class="text-3xl font-bold text-slate-900 mb-1">23个</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">全球覆盖站点</div>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 text-center">
+                    <div class="text-3xl font-bold text-orange-500 mb-1">单一 PO</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">简化订单管理</div>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-gray-100 text-center">
+                    <div class="text-3xl font-bold text-blue-600 mb-1">GXD</div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">全球中转中心</div>
+                </div>
+            </div>
+            
+            <!-- Intro Block -->
+            <div class="mt-12 bg-blue-50 rounded-xl p-6 md:p-8 border-l-4 border-blue-600">
+                <h3 class="text-lg font-bold text-blue-900 mb-2">💡 为什么选择 GDS？</h3>
+                <p class="text-blue-800 text-sm md:text-base leading-relaxed">
+                    传统的直接进口（DI）模式下，您需要面对多个国家的独立采购、独立发货和复杂的合规要求。GDS 像一个巨大的“漏斗”，将全球需求汇聚，您只需对接一个亚马逊实体，发货到一个地点，剩下的全球分拨由亚马逊内部网络完成。
+                </p>
+            </div>
+        </section>
+
+        <!-- SECTION: MODEL (Comparison) -->
+        <section id="view-model" class="hidden fade-in-up">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 border-b border-gray-200 pb-4">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold text-slate-900">运营模式对比</h2>
+                    <p class="text-gray-500 mt-2 text-sm">点击开关，直观感受供应链复杂度的降低。</p>
+                </div>
+                
+                <!-- Toggle Switch -->
+                <div class="mt-4 md:mt-0 bg-gray-200 p-1 rounded-lg flex">
+                    <button id="btn-trad" onclick="toggleDiagram('trad')" class="px-4 py-2 rounded-md text-sm font-bold transition-all shadow-sm bg-white text-slate-800">
+                        传统直邮 (DI)
+                    </button>
+                    <button id="btn-gds" onclick="toggleDiagram('gds')" class="px-4 py-2 rounded-md text-sm font-bold transition-all text-gray-500 hover:text-gray-700">
+                        GDS 直采模式
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden relative min-h-[450px] flex flex-col">
+                
+                <!-- Status Bar -->
+                <div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center text-xs text-gray-500 font-mono">
+                    <span id="diagram-status">状态: 多点对多点 (复杂)</span>
+                    <span>实体流向示意图</span>
+                </div>
+
+                <!-- Diagram Stage -->
+                <div id="diagram-stage" class="flex-grow relative bg-slate-50 p-4 flex items-center justify-center transition-colors duration-500">
+                    <!-- Content injected via JS -->
+                </div>
+
+                <!-- Explanation Footer -->
+                <div class="p-6 bg-white border-t border-gray-100 z-10">
+                    <h4 id="diagram-title" class="font-bold text-lg text-slate-800 mb-1">传统模式的痛点</h4>
+                    <p id="diagram-desc" class="text-sm text-gray-600">您必须分别处理来自美国、英国、日本等不同国家的订单（PO）。每个目的地都需要单独安排物流、单独开具发票、单独处理合规文件。管理成本极高。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: BENEFITS (Chart) -->
+        <section id="view-benefits" class="hidden fade-in-up">
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Left: Chart -->
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-slate-900">核心竞争力分析</h2>
+                        <p class="text-sm text-gray-500">GDS 在订单整合与市场拓展方面具有压倒性优势。</p>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="benefitsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Right: Detailed List -->
+                <div class="lg:col-span-1 space-y-4">
+                    <div class="bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
+                        <h3 class="font-bold text-lg mb-4 flex items-center">
+                            <span class="bg-white/20 p-1.5 rounded mr-2">🚀</span> 
+                            核心价值
+                        </h3>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex items-start">
+                                <span class="mr-2 opacity-80">•</span>
+                                <span><strong>单一 PO 订单：</strong> 将零散的全球需求整合为一张大额订单。</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 opacity-80">•</span>
+                                <span><strong>统一供应商代码：</strong> 一个 Global Vendor Code 即可通行全球。</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 opacity-80">•</span>
+                                <span><strong>降低合规门槛：</strong> 亚马逊筛选"低风险"选品，简化初期流程。</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                        <h3 class="font-bold text-slate-800 mb-3">对比数据</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-500">订单处理效率</span>
+                                    <span class="font-bold text-green-600">+60%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-gray-500">物流管理成本</span>
+                                    <span class="font-bold text-blue-600">-40%</span>
+                                </div>
+                                <div class="w-full bg-gray-100 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 70%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: PROCESS -->
+        <section id="view-process" class="hidden fade-in-up">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-slate-900">五步合作流程</h2>
+                <p class="text-gray-500 mt-2">清晰透明的入驻路径，从意向对齐到全球分销。</p>
+            </div>
+
+            <!-- Interactive Stepper -->
+            <div class="relative max-w-4xl mx-auto mb-12">
+                <!-- Line -->
+                <div class="absolute top-6 left-0 w-full h-1 bg-gray-200 -z-10 rounded-full"></div>
+                
+                <!-- Steps -->
+                <div class="flex justify-between">
+                    <!-- Generates 5 steps -->
+                    <button onclick="setProcess(1)" class="group flex flex-col items-center w-20">
+                        <div id="step-node-1" class="step-node active w-12 h-12 rounded-full bg-orange-500 border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-lg cursor-pointer">1</div>
+                        <span class="mt-3 text-xs font-bold text-gray-600 group-hover:text-orange-600 transition">选品对齐</span>
+                    </button>
+
+                    <button onclick="setProcess(2)" class="group flex flex-col items-center w-20">
+                        <div id="step-node-2" class="step-node w-12 h-12 rounded-full bg-white border-4 border-gray-200 shadow flex items-center justify-center text-gray-400 font-bold text-lg cursor-pointer hover:border-orange-200">2</div>
+                        <span class="mt-3 text-xs font-bold text-gray-400 group-hover:text-gray-600 transition">价格谈判</span>
+                    </button>
+
+                    <button onclick="setProcess(3)" class="group flex flex-col items-center w-20">
+                        <div id="step-node-3" class="step-node w-12 h-12 rounded-full bg-white border-4 border-gray-200 shadow flex items-center justify-center text-gray-400 font-bold text-lg cursor-pointer hover:border-orange-200">3</div>
+                        <span class="mt-3 text-xs font-bold text-gray-400 group-hover:text-gray-600 transition">系统设置</span>
+                    </button>
+
+                    <button onclick="setProcess(4)" class="group flex flex-col items-center w-20">
+                        <div id="step-node-4" class="step-node w-12 h-12 rounded-full bg-white border-4 border-gray-200 shadow flex items-center justify-center text-gray-400 font-bold text-lg cursor-pointer hover:border-orange-200">4</div>
+                        <span class="mt-3 text-xs font-bold text-gray-400 group-hover:text-gray-600 transition">下单 PO</span>
+                    </button>
+
+                    <button onclick="setProcess(5)" class="group flex flex-col items-center w-20">
+                        <div id="step-node-5" class="step-node w-12 h-12 rounded-full bg-white border-4 border-gray-200 shadow flex items-center justify-center text-gray-400 font-bold text-lg cursor-pointer hover:border-orange-200">5</div>
+                        <span class="mt-3 text-xs font-bold text-gray-400 group-hover:text-gray-600 transition">全球分销</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Detail Card -->
+            <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div class="h-2 bg-orange-500 w-full"></div>
+                <div id="process-content" class="p-8 md:p-10 flex flex-col md:flex-row gap-8 items-start transition-opacity duration-300">
+                    <!-- JS Injected Content -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION: FAQ (NEW & VISUAL) -->
+        <section id="view-faq" class="hidden fade-in-up">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">常见问题中心 FAQ</h2>
+                <p class="mt-2 text-gray-500">选择下方话题卡片，快速查找您需要的答案。</p>
+            </div>
+
+            <!-- Topic Cards (Visual Filters) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div onclick="filterFAQ('model')" id="cat-model" class="faq-category-card active bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center text-center">
+                    <div class="icon text-3xl mb-2 text-orange-600">🏗️</div>
+                    <div class="font-bold text-sm text-gray-700">模式与机制</div>
+                </div>
+                <div onclick="filterFAQ('logistics')" id="cat-logistics" class="faq-category-card bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center text-center">
+                    <div class="icon text-3xl mb-2 text-gray-400">🚢</div>
+                    <div class="font-bold text-sm text-gray-700">物流与发货</div>
+                </div>
+                <div onclick="filterFAQ('compliance')" id="cat-compliance" class="faq-category-card bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center text-center">
+                    <div class="icon text-3xl mb-2 text-gray-400">⚖️</div>
+                    <div class="font-bold text-sm text-gray-700">合规与风控</div>
+                </div>
+                <div onclick="filterFAQ('finance')" id="cat-finance" class="faq-category-card bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center text-center">
+                    <div class="icon text-3xl mb-2 text-gray-400">💰</div>
+                    <div class="font-bold text-sm text-gray-700">财务与发票</div>
+                </div>
+            </div>
+
+            <!-- Dynamic Question List -->
+            <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden min-h-[300px]">
+                <div id="faq-list" class="divide-y divide-gray-100">
+                    <!-- Populated by JS -->
+                </div>
+                <!-- Empty State / Graphic -->
+                <div id="faq-empty" class="hidden p-10 text-center">
+                    <div class="text-4xl mb-4">🔍</div>
+                    <p class="text-gray-500">请点击上方类别查看相关问题。</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex justify-center items-center gap-2 mb-4 opacity-50">
+                <span class="text-xl">🔒</span>
+            </div>
+            <p class="text-sm text-gray-500 font-medium">© 2024-2025 Amazon Confidential.</p>
+            <p class="text-xs text-gray-400 mt-2 max-w-2xl mx-auto">
+                本页面内容仅供参考。亚马逊不就目的地国家的合规要求向供应商提供建议。
+                每个供应商合作伙伴都有责任确保其产品符合目标目的地的当地法规和合规性要求。
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- State Management ---
+        const views = ['home', 'model', 'benefits', 'process', 'faq'];
+        let currentProcessStep = 1;
+        let activeFaqCategory = 'model';
+
+        // --- Data: Process Steps ---
+        const processData = {
+            1: {
+                title: "选品对齐 (Alignment)",
+                desc: "您提交完整目录，亚马逊通过大数据筛选出最适合全球扩张的高潜力 ASIN。我们共同确认一份既符合合规要求、又具备销售潜力的选品清单。",
+                icon: "📋",
+                tip: "重点：利用亚马逊数据洞察，精准选品。"
+            },
+            2: {
+                title: "价格谈判 (Pricing)",
+                desc: "基于全球采购量进行成本谈判。我们的目标是建立一个具有竞争力的基础成本结构，确保您的产品在欧美日等所有目标市场都具有价格优势。",
+                icon: "💲",
+                tip: "优势：以量换价，一次谈判，全球适用。"
+            },
+            3: {
+                title: "系统设置 (Setup)",
+                desc: "开通全球供应商代码 (Global Vendor Code)。如果已有 DI 代码，我们将复用现有文档以加速流程。真正的“一次入驻，全球通用”。",
+                icon: "⚙️",
+                tip: "效率：大幅减少重复的文书工作。"
+            },
+            4: {
+                title: "下达订单 (Ordering)",
+                desc: "亚马逊发出第一阶段采购订单 (Stage 1 PO)。该订单汇集了下游多个国家的总需求。您只需处理这一张订单，无需面对几十个国家的零散采购。",
+                icon: "📄",
+                tip: "关键：单次大额订单，简化生产计划。"
+            },
+            5: {
+                title: "全球分销 (Distribution)",
+                desc: "您将货物发往指定的始发地仓库 (GXD)。收到货后，亚马逊利用内部物流网络，根据实时需求将商品调拨至美国、英国、日本等目的国。",
+                icon: "🚢",
+                tip: "省心：不仅是销售，连跨境物流调拨也由亚马逊搞定。"
+            }
+        };
+
+        // --- Data: FAQ Content ---
+        const faqData = {
+            model: [
+                { q: "GDS 模式和传统的 DI 模式最大的区别是什么？", a: "核心区别在于**整合**。传统模式下，您需要直接应对每个国家的订单和物流；GDS 模式下，您只面对一个亚马逊实体（GXD），一张订单，一个发货地。复杂性由 N 降为 1。" },
+                { q: "GXD 是什么意思？", a: "GXD 代表 **Global Cross Dock**（全球交叉转运中心）。这是亚马逊在您附近的（如中国沿海）设立的集货仓。您只需把货发到这里，后续跨国运输由亚马逊负责。" }
+            ],
+            logistics: [
+                { q: "我需要负责将货物运送到海外目的国吗？", a: "不需要。在 GDS 模式下，您通常只需将货物交付给**始发地 (Origin)** 的指定仓库（例如深圳或宁波的 GXD）。跨洋运输和目的国进口通常由亚马逊内部网络处理。" },
+                { q: "交货期 (Lead Time) 如何计算？", a: "交货期仅计算从收到 PO 到送达 GXD 的时间。因为您不需要负责海运，所以资金周转周期通常比传统直邮模式更短。" }
+            ],
+            compliance: [
+                { q: "亚马逊会告诉我每个国家的合规要求吗？", a: "<span class='text-red-600 font-bold'>不会。</span> 亚马逊不提供法律建议。虽然我们会通过风险框架筛选低风险选品，但**确保产品符合目的国法律法规始终是供应商的责任**。" },
+                { q: "如果海关扣留了货物怎么办？", a: "如果目的国海关临时要求提供特定证书，亚马逊会联系您提供。如果无法提供导致退运或销毁，风险通常需由供应商承担。因此前期选品对齐非常重要。" }
+            ],
+            finance: [
+                { q: "我和谁结算货款？", a: "您与下达 PO 的亚马逊实体结算。通常是亚马逊的全球采购实体。这意味着您收到的是统一的货款，而不是来自十几个国家的零散汇款。" },
+                { q: "发票需要开给每个国家吗？", a: "不需要。既然是 Single PO（单一订单），您只需开具一份对应该 PO 的发票。这大大减少了财务部门的工作量。" }
+            ]
+        };
+
+        // --- Router ---
+        function router(viewId) {
+            // Update Nav UI
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'text-slate-900');
+                el.classList.add('text-gray-600');
+            });
+            const activeBtn = document.querySelector(`button[onclick="router('${viewId}')"]`);
+            if(activeBtn) activeBtn.classList.add('active', 'text-slate-900');
+
+            // Hide all sections
+            views.forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
+
+            // Show target
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+
+            // Specific Init Logic
+            if(viewId === 'model') toggleDiagram('trad'); // Reset to default
+            if(viewId === 'benefits') initChart();
+            if(viewId === 'process') setProcess(1);
+            if(viewId === 'faq') filterFAQ('model');
+
+            // Close Mobile Menu
+            document.getElementById('mobile-menu').classList.add('hidden');
+            window.scrollTo(0,0);
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        // --- Component: CSS Diagram (Model) ---
+        function toggleDiagram(mode) {
+            const stage = document.getElementById('diagram-stage');
+            const status = document.getElementById('diagram-status');
+            const title = document.getElementById('diagram-title');
+            const desc = document.getElementById('diagram-desc');
+            const btnTrad = document.getElementById('btn-trad');
+            const btnGds = document.getElementById('btn-gds');
+
+            // Reset Buttons
+            btnTrad.className = "px-4 py-2 rounded-md text-sm font-bold transition-all text-gray-500 hover:text-gray-700";
+            btnGds.className = "px-4 py-2 rounded-md text-sm font-bold transition-all text-gray-500 hover:text-gray-700";
+
+            if(mode === 'trad') {
+                btnTrad.className = "px-4 py-2 rounded-md text-sm font-bold transition-all shadow-sm bg-white text-slate-800 ring-1 ring-gray-200";
+                status.innerHTML = "<span class='text-red-500'>● 传统模式</span>：多点对多点，效率低";
+                title.innerText = "传统直接进口 (Direct Import)";
+                desc.innerHTML = "供应商需分别对接美国、欧洲、日本团队。<b>多张订单，多次发货，多套单证。</b>资源被分散在重复的行政工作中。";
+                
+                // HTML Layout for Traditional
+                stage.innerHTML = `
+                    <div class="w-full max-w-2xl grid grid-cols-3 gap-8 relative z-10">
+                        <!-- Left: Vendor -->
+                        <div class="col-span-1 flex flex-col justify-center items-center space-y-8">
+                            <div class="p-4 bg-white border-2 border-slate-300 rounded-lg shadow-sm text-center w-32 relative z-20">
+                                <div class="text-2xl">🏭</div>
+                                <div class="font-bold text-slate-700">供应商</div>
+                            </div>
+                        </div>
+
+                        <!-- Middle: Chaos Lines (CSS) -->
+                        <div class="col-span-1 relative">
+                            <!-- Crossing Lines -->
+                            <div class="absolute top-1/4 left-0 w-full h-0.5 bg-red-300 transform rotate-12 origin-left animate-pulse"></div>
+                            <div class="absolute top-1/2 left-0 w-full h-0.5 bg-red-300 transform -rotate-12 origin-left animate-pulse"></div>
+                            <div class="absolute bottom-1/4 left-0 w-full h-0.5 bg-red-300 transform rotate-6 origin-left animate-pulse"></div>
+                            
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-50 border border-red-200 text-red-600 text-xs px-2 py-1 rounded shadow-sm whitespace-nowrap z-30">
+                                多重 PO & 单证
+                            </div>
+                        </div>
+
+                        <!-- Right: Destinations -->
+                        <div class="col-span-1 flex flex-col justify-between space-y-4">
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center opacity-80">
+                                <div class="text-lg">🇺🇸</div>
+                                <div class="text-xs text-blue-800 font-bold">美国站</div>
+                            </div>
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center opacity-80">
+                                <div class="text-lg">🇬🇧</div>
+                                <div class="text-xs text-blue-800 font-bold">英国站</div>
+                            </div>
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center opacity-80">
+                                <div class="text-lg">🇯🇵</div>
+                                <div class="text-xs text-blue-800 font-bold">日本站</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                btnGds.className = "px-4 py-2 rounded-md text-sm font-bold transition-all shadow-sm bg-orange-500 text-white ring-1 ring-orange-600";
+                status.innerHTML = "<span class='text-green-600'>● GDS 模式</span>：一点接入，全球分发";
+                title.innerText = "GDS 全球直采模式";
+                desc.innerHTML = "您只需将货物发往一个 GXD 集货中心。亚马逊负责后续的跨国调拨。<b>一张 PO，一次发货，全球触达。</b>";
+
+                // HTML Layout for GDS
+                stage.innerHTML = `
+                    <div class="w-full max-w-2xl grid grid-cols-5 gap-2 relative z-10 items-center">
+                        <!-- Vendor -->
+                        <div class="col-span-1 flex justify-center">
+                            <div class="p-4 bg-white border-2 border-orange-500 rounded-lg shadow-md text-center w-28 relative z-20">
+                                <div class="text-2xl">🏭</div>
+                                <div class="font-bold text-slate-800 text-sm">供应商</div>
+                            </div>
+                        </div>
+
+                        <!-- Single Line -->
+                        <div class="col-span-1 flex items-center relative">
+                            <div class="w-full h-1 bg-orange-500"></div>
+                            <div class="absolute top-[-20px] left-1/2 transform -translate-x-1/2 text-[10px] text-orange-600 font-bold">
+                                单一 PO
+                            </div>
+                        </div>
+
+                        <!-- GXD Node -->
+                        <div class="col-span-1 flex justify-center">
+                            <div class="p-5 bg-orange-50 border-2 border-orange-500 border-dashed rounded-full shadow-lg text-center w-32 h-32 flex flex-col justify-center items-center z-20 relative">
+                                <div class="text-3xl">📦</div>
+                                <div class="font-bold text-orange-800 text-sm mt-1">GXD<br>集货中心</div>
+                            </div>
+                        </div>
+
+                        <!-- Distribution Lines -->
+                        <div class="col-span-1 relative h-32">
+                             <!-- Fan out lines -->
+                             <div class="absolute top-1/2 left-0 w-full h-0.5 bg-blue-300 transform -translate-y-1/2 -rotate-25 origin-left"></div>
+                             <div class="absolute top-1/2 left-0 w-full h-0.5 bg-blue-300 transform -translate-y-1/2"></div>
+                             <div class="absolute top-1/2 left-0 w-full h-0.5 bg-blue-300 transform -translate-y-1/2 rotate-25 origin-left"></div>
+                        </div>
+
+                        <!-- Destinations -->
+                        <div class="col-span-1 flex flex-col gap-3">
+                            <div class="p-2 bg-blue-50 border border-blue-200 rounded text-center text-xs">🇺🇸 美国</div>
+                            <div class="p-2 bg-blue-50 border border-blue-200 rounded text-center text-xs">🇪🇺 欧洲</div>
+                            <div class="p-2 bg-blue-50 border border-blue-200 rounded text-center text-xs">🇯🇵 日本</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // --- Component: Chart.js (Benefits) ---
+        let myChart = null;
+        function initChart() {
+            if(myChart) return;
+            const ctx = document.getElementById('benefitsChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['操作简单性', '市场覆盖率', '订单整合度', '合规便捷性', '资金周转率'],
+                    datasets: [{
+                        label: 'GDS 直采模式',
+                        data: [90, 95, 85, 80, 85],
+                        fill: true,
+                        backgroundColor: 'rgba(255, 153, 0, 0.2)',
+                        borderColor: '#FF9900',
+                        pointBackgroundColor: '#FF9900',
+                        borderWidth: 2
+                    }, {
+                        label: '传统 DI 模式',
+                        data: [40, 50, 30, 40, 60],
+                        fill: true,
+                        backgroundColor: 'rgba(148, 163, 184, 0.2)',
+                        borderColor: '#94a3b8',
+                        pointBackgroundColor: '#94a3b8',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e2e8f0' },
+                            grid: { color: '#e2e8f0' },
+                            pointLabels: {
+                                font: { size: 12, family: "'Noto Sans SC', sans-serif" },
+                                color: '#475569'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // --- Component: Stepper (Process) ---
+        function setProcess(step) {
+            currentProcessStep = step;
+            
+            // UI Update: Circles
+            for(let i=1; i<=5; i++) {
+                const node = document.getElementById(`step-node-${i}`);
+                if(i === step) {
+                    node.classList.add('active', 'bg-orange-500', 'text-white', 'border-white');
+                    node.classList.remove('bg-white', 'text-gray-400', 'border-gray-200');
+                } else {
+                    node.classList.remove('active', 'bg-orange-500', 'text-white', 'border-white');
+                    node.classList.add('bg-white', 'text-gray-400', 'border-gray-200');
+                }
+            }
+
+            // UI Update: Content
+            const contentDiv = document.getElementById('process-content');
+            const data = processData[step];
+            
+            contentDiv.style.opacity = '0';
+            setTimeout(() => {
+                contentDiv.innerHTML = `
+                    <div class="flex-shrink-0">
+                        <div class="w-20 h-20 rounded-2xl bg-orange-100 flex items-center justify-center text-4xl shadow-inner text-orange-600">
+                            ${data.icon}
+                        </div>
+                    </div>
+                    <div class="flex-grow">
+                        <h3 class="text-2xl font-bold text-slate-800 mb-3">${data.title}</h3>
+                        <p class="text-gray-600 leading-relaxed mb-6">${data.desc}</p>
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-md">
+                            <span class="text-blue-800 font-bold text-sm">💡 Simone 提示：</span>
+                            <span class="text-blue-700 text-sm">${data.tip}</span>
+                        </div>
+                    </div>
+                `;
+                contentDiv.style.opacity = '1';
+            }, 200);
+        }
+
+        // --- Component: Visual FAQ ---
+        function filterFAQ(category) {
+            activeFaqCategory = category;
+            
+            // 1. Update Top Cards
+            const categories = ['model', 'logistics', 'compliance', 'finance'];
+            categories.forEach(c => {
+                const card = document.getElementById(`cat-${c}`);
+                const icon = card.querySelector('.icon');
+                if (c === category) {
+                    card.classList.add('active');
+                    icon.classList.remove('text-gray-400');
+                    icon.classList.add('text-orange-600'); // Highlight Icon
+                } else {
+                    card.classList.remove('active');
+                    icon.classList.add('text-gray-400');
+                    icon.classList.remove('text-orange-600');
+                }
+            });
+
+            // 2. Render List
+            const listDiv = document.getElementById('faq-list');
+            const questions = faqData[category];
+            
+            let html = '';
+            questions.forEach((item, index) => {
+                html += `
+                    <div class="group bg-white hover:bg-slate-50 transition-colors duration-200">
+                        <details class="w-full">
+                            <summary class="list-none flex justify-between items-center cursor-pointer p-5">
+                                <span class="font-bold text-slate-800 group-hover:text-orange-600 transition-colors">Q: ${item.q}</span>
+                                <span class="text-gray-400 transform group-open:rotate-180 transition-transform duration-200">▼</span>
+                            </summary>
+                            <div class="px-5 pb-5 text-gray-600 text-sm leading-relaxed border-t border-gray-50 pt-3 mt-[-10px]">
+                                <div class="flex gap-3">
+                                    <span class="text-orange-500 font-bold text-lg">A:</span>
+                                    <div>${item.a}</div>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                `;
+            });
+            listDiv.innerHTML = html;
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            router('home');
+        });
+
+    </script>
+</body>
+</html>
